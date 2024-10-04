@@ -1,12 +1,13 @@
 ﻿using FluentAssertions;
 using IdentityModel.Client;
-using Microsoft.AspNetCore.WebUtilities;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace IdentityModel.UnitTests
@@ -36,8 +37,8 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestClientCredentialsTokenAsync();
 
-            response.IsError.Should().BeFalse();
-            _handler.Request.RequestUri.AbsoluteUri.Should().Be(Endpoint);
+            response.Should().BeSuccessful();
+            _handler.Request.Should().HaveRequestUri(new Uri(Endpoint));
         }
 
         [Fact]
@@ -47,14 +48,13 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestClientCredentialsTokenAsync(scope: "scope");
 
-            response.IsError.Should().BeFalse();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("grant_type", out var grant_type).Should().BeTrue();
-            grant_type.First().Should().Be(OidcConstants.GrantTypes.ClientCredentials);
-
-            fields.TryGetValue("scope", out var scope).Should().BeTrue();
-            scope.First().Should().Be("scope");
+            response.Should().BeSuccessful();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = OidcConstants.GrantTypes.ClientCredentials,
+                ["client_id"] = "client",
+                ["scope"] = "scope",
+            });
         }
 
         [Fact]
@@ -64,17 +64,13 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestDeviceTokenAsync(deviceCode: "device_code");
 
-            response.IsError.Should().BeFalse();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("grant_type", out var grant_type).Should().BeTrue();
-            grant_type.First().Should().Be(OidcConstants.GrantTypes.DeviceCode);
-
-            fields.TryGetValue("client_id", out var client_id).Should().BeTrue();
-            client_id.First().Should().Be("device");
-
-            fields.TryGetValue("device_code", out var device_code).Should().BeTrue();
-            device_code.First().Should().Be("device_code");
+            response.Should().BeSuccessful();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = OidcConstants.GrantTypes.DeviceCode,
+                ["client_id"] = "device",
+                ["device_code"] = "device_code",
+            });
         }
 
         [Fact]
@@ -94,20 +90,15 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestPasswordTokenAsync(userName: "user", password: "password", scope: "scope");
 
-            response.IsError.Should().BeFalse();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("grant_type", out var grant_type).Should().BeTrue();
-            grant_type.First().Should().Be(OidcConstants.GrantTypes.Password);
-
-            fields.TryGetValue("username", out var username).Should().BeTrue();
-            username.First().Should().Be("user");
-
-            fields.TryGetValue("password", out var password).Should().BeTrue();
-            password.First().Should().Be("password");
-
-            fields.TryGetValue("scope", out var scope).Should().BeTrue();
-            scope.First().Should().Be("scope");
+            response.Should().BeSuccessful();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = OidcConstants.GrantTypes.Password,
+                ["client_id"] = "client",
+                ["username"] = "user",
+                ["password"] = "password",
+                ["scope"] = "scope",
+            });
         }
 
         [Fact]
@@ -117,17 +108,14 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestPasswordTokenAsync(userName: "user");
 
-            response.IsError.Should().BeFalse();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("grant_type", out var grant_type).Should().BeTrue();
-            grant_type.First().Should().Be(OidcConstants.GrantTypes.Password);
-
-            fields.TryGetValue("username", out var username).Should().BeTrue();
-            username.First().Should().Be("user");
-
-            fields.TryGetValue("password", out var password).Should().BeTrue();
-            password.First().Should().Be("");
+            response.Should().BeSuccessful();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = OidcConstants.GrantTypes.Password,
+                ["client_id"] = "client",
+                ["username"] = "user",
+                ["password"] = "",
+            });
         }
 
         [Fact]
@@ -147,20 +135,15 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestAuthorizationCodeTokenAsync(code: "code", redirectUri: "uri", codeVerifier: "verifier");
 
-            response.IsError.Should().BeFalse();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("grant_type", out var grant_type).Should().BeTrue();
-            grant_type.First().Should().Be(OidcConstants.GrantTypes.AuthorizationCode);
-
-            fields.TryGetValue("code", out var code).Should().BeTrue();
-            code.First().Should().Be("code");
-
-            fields.TryGetValue("redirect_uri", out var redirect_uri).Should().BeTrue();
-            redirect_uri.First().Should().Be("uri");
-
-            fields.TryGetValue("code_verifier", out var code_verifier).Should().BeTrue();
-            code_verifier.First().Should().Be("verifier");
+            response.Should().BeSuccessful();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = OidcConstants.GrantTypes.AuthorizationCode,
+                ["client_id"] = "client",
+                ["code"] = "code",
+                ["redirect_uri"] = "uri",
+                ["code_verifier"] = "verifier",
+            });
         }
 
         [Fact]
@@ -190,17 +173,14 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestRefreshTokenAsync(refreshToken: "rt", scope: "scope");
 
-            response.IsError.Should().BeFalse();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("grant_type", out var grant_type).Should().BeTrue();
-            grant_type.First().Should().Be(OidcConstants.GrantTypes.RefreshToken);
-
-            fields.TryGetValue("refresh_token", out var code).Should().BeTrue();
-            code.First().Should().Be("rt");
-
-            fields.TryGetValue("scope", out var redirect_uri).Should().BeTrue();
-            redirect_uri.First().Should().Be("scope");
+            response.Should().BeSuccessful();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = OidcConstants.GrantTypes.RefreshToken,
+                ["client_id"] = "client",
+                ["refresh_token"] = "rt",
+                ["scope"] = "scope",
+            });
         }
 
         [Fact]
@@ -237,22 +217,15 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestTokenAsync(grantType: "test", parameters: parameters);
 
-            var request = _handler.Request;
-
-            request.Headers.Authorization.Should().BeNull();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("grant_type", out var grant_type).Should().BeTrue();
-            grant_type.First().Should().Be("test");
-
-            fields.TryGetValue("client_id", out var client_id).Should().BeTrue();
-            client_id.First().Should().Be("custom");
-
-            fields.TryGetValue("client_secret", out var client_secret).Should().BeTrue();
-            client_secret.First().Should().Be("custom");
-
-            fields.TryGetValue("custom", out var custom).Should().BeTrue();
-            custom.First().Should().Be("custom");
+            response.Should().BeSuccessful();
+            _handler.Request.Should().HaveNoAuthorizationHeader();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = "test",
+                ["client_id"] = "custom",
+                ["client_secret"] = "custom",
+                ["custom"] = "custom",
+            });
         }
 
         [Fact]
@@ -269,25 +242,16 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestTokenAsync(grantType: "test", parameters: parameters);
 
-            var request = _handler.Request;
-
-            request.Headers.Authorization.Should().BeNull();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("grant_type", out var grant_type).Should().BeTrue();
-            grant_type.First().Should().Be("test");
-
-            fields.TryGetValue("client_id", out var client_id).Should().BeTrue();
-            client_id.First().Should().Be("custom");
-
-            fields.TryGetValue("client_secret", out var client_secret).Should().BeTrue();
-            client_secret.First().Should().Be("custom");
-
-            fields.TryGetValue("custom", out var custom).Should().BeTrue();
-            custom.First().Should().Be("custom");
-
-            fields.TryGetValue("global", out var global).Should().BeTrue();
-            global.First().Should().Be("global");
+            response.Should().BeSuccessful();
+            _handler.Request.Should().HaveNoAuthorizationHeader();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = "test",
+                ["client_id"] = "custom",
+                ["client_secret"] = "custom",
+                ["custom"] = "custom",
+                ["global"] = "global",
+            });
         }
 
         [Fact]
@@ -303,7 +267,9 @@ namespace IdentityModel.UnitTests
                 { "custom", "custom" }
             };
             
-            _ = await tokenClient.RequestTokenAsync(grantType: "test", parameters: localParameters);
+            var response = await tokenClient.RequestTokenAsync(grantType: "test", parameters: localParameters);
+
+            response.Should().BeSuccessful();
 
             globalOptions.Parameters.Should().HaveCount(1);
             var globalValue = globalOptions.Parameters.FirstOrDefault(p => p.Key == "global").Value;
@@ -322,11 +288,8 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestTokenAsync(grantType: "test");
 
-            var request = _handler.Request;
-
-            request.Headers.Authorization.Should().NotBeNull();
-            request.Headers.Authorization.Scheme.Should().Be("Basic");
-            request.Headers.Authorization.Parameter.Should().Be(BasicAuthenticationOAuthHeaderValue.EncodeCredential("client", "secret"));
+            response.Should().BeSuccessful();
+            _handler.Request.Should().HaveBasicAuthorizationHeader("client", "secret");
         }
 
         [Fact]
@@ -341,13 +304,14 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestTokenAsync(grantType: "test");
 
-            var request = _handler.Request;
-            request.Headers.Authorization.Should().BeNull();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields["client_id"].First().Should().Be("client");
-            fields["client_secret"].First().Should().Be("secret");
-
+            response.Should().BeSuccessful();
+            _handler.Request.Should().HaveNoAuthorizationHeader();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = "test",
+                ["client_id"] = "client",
+                ["client_secret"] = "secret",
+            });
         }
 
         [Fact]
@@ -361,12 +325,13 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestTokenAsync(grantType: "test");
 
-            var request = _handler.Request;
-
-            request.Headers.Authorization.Should().BeNull();
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields["client_id"].First().Should().Be("client");
+            response.Should().BeSuccessful();
+            _handler.Request.Should().HaveNoAuthorizationHeader();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = "test",
+                ["client_id"] = "client",
+            });
         }
 
         [Fact]
@@ -380,15 +345,12 @@ namespace IdentityModel.UnitTests
 
             var response = await tokenClient.RequestTokenAsync(grantType: "test");
 
-            var request = _handler.Request;
-
-            request.Headers.Authorization.Should().NotBeNull();
-            request.Headers.Authorization.Scheme.Should().Be("Basic");
-            request.Headers.Authorization.Parameter.Should().Be(BasicAuthenticationOAuthHeaderValue.EncodeCredential("client", ""));
-
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
-            fields.TryGetValue("client_secret", out _).Should().BeFalse();
-            fields.TryGetValue("client_id", out _).Should().BeFalse();
+            response.Should().BeSuccessful();
+            _handler.Request.Should().HaveBasicAuthorizationHeader("client", "");
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = "test",
+            });
         }
 
         [Fact]
@@ -401,12 +363,15 @@ namespace IdentityModel.UnitTests
             });
 
             var response = await tokenClient.RequestTokenAsync(grantType: "test");
-            var fields = QueryHelpers.ParseQuery(_handler.Body);
 
-            fields["grant_type"].First().Should().Be("test");
-            fields["client_id"].First().Should().Be("client");
-            fields["client_assertion_type"].First().Should().Be("type");
-            fields["client_assertion"].First().Should().Be("value");
+            response.Should().BeSuccessful();
+            _handler.Should().HaveBody(new Dictionary<string, StringValues>
+            {
+                ["grant_type"] = "test",
+                ["client_id"] = "client",
+                ["client_assertion_type"] = "type",
+                ["client_assertion"] = "value",
+            });
         }
     }
 }
